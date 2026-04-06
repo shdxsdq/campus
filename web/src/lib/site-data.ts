@@ -1,3 +1,5 @@
+import "server-only";
+
 import { cache } from "react";
 
 import { DEMO_CONTENT } from "@/data/demo-content";
@@ -27,8 +29,7 @@ type StrapiResponse<T> = {
   data: T;
 };
 
-const STRAPI_URL =
-  process.env.STRAPI_URL?.trim() || process.env.NEXT_PUBLIC_STRAPI_URL?.trim();
+const STRAPI_URL = process.env.STRAPI_URL?.trim();
 const STRAPI_TOKEN = process.env.STRAPI_API_TOKEN?.trim();
 
 const toAbsoluteAssetUrl = (value?: string | null) => {
