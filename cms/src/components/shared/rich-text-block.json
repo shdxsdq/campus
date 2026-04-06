@@ -1,8 +1,8 @@
 {
   "collectionName": "components_shared_rich_text_blocks",
   "info": {
-    "displayName": "Rich Text Block",
-    "description": "Text section for article content"
+    "displayName": "\u6b63\u6587\u6587\u5b57\u5757",
+    "description": "\u7528\u4e8e\u586b\u5199\u4e00\u6bb5\u6b63\u6587\u6587\u5b57"
   },
   "attributes": {
     "content": {

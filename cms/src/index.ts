@@ -2,6 +2,60 @@ import type { Core } from '@strapi/strapi';
 
 import { demoSeed } from './seed/demo-content';
 
+type ContentManagerEditMetadata = {
+  label?: string;
+  description?: string;
+  placeholder?: string;
+  visible?: boolean;
+  editable?: boolean;
+  mainField?: string;
+};
+
+type ContentManagerListMetadata = {
+  label?: string;
+  searchable?: boolean;
+  sortable?: boolean;
+};
+
+type ContentManagerMetadata = {
+  edit?: ContentManagerEditMetadata;
+  list?: ContentManagerListMetadata;
+};
+
+type ContentManagerLayoutField = {
+  name: string;
+  size: number;
+};
+
+type ContentManagerConfiguration = {
+  settings: Record<string, unknown>;
+  metadatas: Record<string, ContentManagerMetadata>;
+  layouts: {
+    list: string[];
+    edit: ContentManagerLayoutField[][];
+  };
+};
+
+type ContentManagerContentTypeService = {
+  findConfiguration: (
+    contentType: unknown,
+  ) => Promise<ContentManagerConfiguration & { uid: string }>;
+  updateConfiguration: (
+    contentType: unknown,
+    configuration: ContentManagerConfiguration,
+  ) => Promise<unknown>;
+};
+
+type ContentManagerComponentService = {
+  findConfiguration: (
+    component: unknown,
+  ) => Promise<ContentManagerConfiguration & { uid: string; category: string }>;
+  updateConfiguration: (
+    component: unknown,
+    configuration: ContentManagerConfiguration,
+  ) => Promise<unknown>;
+};
+
 const seedCollection = async (
   strapi: Core.Strapi,
   uid: string,
@@ -96,6 +150,155 @@ const toContentSections = (body: unknown) => {
   ];
 };
 
+const withMetadata = (
+  metadata: ContentManagerMetadata | undefined,
+  {
+    label,
+    description = '',
+    visible = true,
+  }: {
+    label: string;
+    description?: string;
+    visible?: boolean;
+  },
+): ContentManagerMetadata => ({
+  ...metadata,
+  edit: {
+    ...(metadata?.edit ?? {}),
+    label,
+    description,
+    placeholder: metadata?.edit?.placeholder ?? '',
+    visible,
+    editable: metadata?.edit?.editable ?? true,
+  },
+  list: {
+    ...(metadata?.list ?? {}),
+    label,
+  },
+});
+
+const syncArticleEditorLayout = async (
+  strapi: Core.Strapi,
+  uid: string,
+) => {
+  const contentTypeService = strapi
+    .plugin('content-manager')
+    .service('content-types') as ContentManagerContentTypeService;
+  const contentType = strapi.contentTypes[uid];
+
+  if (!contentType) {
+    return;
+  }
+
+  const current = await contentTypeService.findConfiguration(contentType);
+
+  await contentTypeService.updateConfiguration(contentType, {
+    settings: {
+      ...current.settings,
+      mainField: 'title',
+      defaultSortBy: 'publishedDate',
+      defaultSortOrder: 'DESC',
+      pageSize: 10,
+    },
+    metadatas: {
+      ...current.metadatas,
+      title: withMetadata(current.metadatas.title, {
+        label: '\u6807\u9898',
+      }),
+      slug: withMetadata(current.metadatas.slug, {
+        label: 'Slug',
+        description:
+          '\u7528\u4e8e\u751f\u6210\u6587\u7ae0\u94fe\u63a5\uff0c\u5efa\u8bae\u4f7f\u7528\u82f1\u6587\u6216\u62fc\u97f3',
+      }),
+      publishedDate: withMetadata(current.metadatas.publishedDate, {
+        label: '\u53d1\u5e03\u65f6\u95f4',
+      }),
+      author: withMetadata(current.metadatas.author, {
+        label: '\u4f5c\u8005',
+      }),
+      contentSections: withMetadata(current.metadatas.contentSections, {
+        label: '\u6b63\u6587\u5185\u5bb9',
+        description:
+          '\u5728\u8fd9\u91cc\u6309\u987a\u5e8f\u6dfb\u52a0\u201c\u6b63\u6587\u6587\u5b57\u5757\u201d\u548c\u201c\u6b63\u6587\u56fe\u7247\u7ec4\u201d\uff0c\u56fe\u7247\u5c31\u4f1a\u663e\u793a\u5728\u5bf9\u5e94\u7684\u6587\u5b57\u4f4d\u7f6e',
+      }),
+      body: withMetadata(current.metadatas.body, {
+        label: '\u65e7\u7248\u6b63\u6587',
+        visible: false,
+      }),
+      coverImageUrl: withMetadata(current.metadatas.coverImageUrl, {
+        label: '\u65e7\u7248\u5c01\u9762\u56fe\u94fe\u63a5',
+        visible: false,
+      }),
+      coverImage: withMetadata(current.metadatas.coverImage, {
+        label: '\u9876\u90e8\u5c01\u9762\u56fe',
+        description:
+          '\u663e\u793a\u5728\u6587\u7ae0\u9876\u90e8\uff0c\u4e0d\u4f1a\u63d2\u5165\u5230\u6b63\u6587\u4e2d\u95f4',
+      }),
+      attachments: withMetadata(current.metadatas.attachments, {
+        label: '\u6587\u672b\u9644\u4ef6',
+        description:
+          '\u9644\u4ef6\u4f1a\u7edf\u4e00\u663e\u793a\u5728\u6587\u7ae0\u6700\u4e0b\u65b9\uff0c\u652f\u6301\u4e00\u6b21\u4e0a\u4f20\u591a\u4e2a\u6587\u4ef6',
+      }),
+    },
+    layouts: {
+      ...current.layouts,
+      list: ['title', 'publishedDate', 'author', 'slug'],
+      edit: [
+        [
+          { name: 'title', size: 8 },
+          { name: 'slug', size: 4 },
+        ],
+        [
+          { name: 'publishedDate', size: 4 },
+          { name: 'author', size: 4 },
+        ],
+        [{ name: 'contentSections', size: 12 }],
+        [
+          { name: 'coverImage', size: 6 },
+          { name: 'attachments', size: 6 },
+        ],
+      ],
+    },
+  });
+};
+
+const syncArticleComponentLayout = async (
+  strapi: Core.Strapi,
+  uid: string,
+  fieldName: string,
+  fieldLabel: string,
+  fieldDescription: string,
+) => {
+  const componentService = strapi
+    .plugin('content-manager')
+    .service('components') as ContentManagerComponentService;
+  const component = strapi.components[uid];
+
+  if (!component) {
+    return;
+  }
+
+  const current = await componentService.findConfiguration(component);
+
+  await componentService.updateConfiguration(component, {
+    settings: {
+      ...current.settings,
+      mainField: fieldName,
+    },
+    metadatas: {
+      ...current.metadatas,
+      [fieldName]: withMetadata(current.metadatas[fieldName], {
+        label: fieldLabel,
+        description: fieldDescription,
+      }),
+    },
+    layouts: {
+      ...current.layouts,
+      edit: [[{ name: fieldName, size: 12 }]],
+    },
+  });
+};
+
 const migrateLegacyPosts = async (
   strapi: Core.Strapi,
   uid: string,
@@ -144,6 +347,23 @@ export default {
   register() {},
 
   async bootstrap({ strapi }: { strapi: Core.Strapi }) {
+    await syncArticleEditorLayout(strapi, 'api::news-post.news-post');
+    await syncArticleEditorLayout(strapi, 'api::notice-post.notice-post');
+    await syncArticleComponentLayout(
+      strapi,
+      'shared.rich-text-block',
+      'content',
+      '\u6b63\u6587\u6587\u5b57',
+      '\u5728\u8fd9\u4e00\u5757\u5199\u5f53\u524d\u4f4d\u7f6e\u7684\u6b63\u6587\u5185\u5bb9',
+    );
+    await syncArticleComponentLayout(
+      strapi,
+      'shared.image-gallery-block',
+      'images',
+      '\u56fe\u7247',
+      '\u53ef\u4e00\u6b21\u9009\u62e9\u591a\u5f20\u56fe\u7247\uff0c\u663e\u793a\u5728\u5f53\u524d\u63d2\u5165\u4f4d\u7f6e',
+    );
+
     if (process.env.SEED_DEMO_DATA === 'false') {
       return;
     }

@@ -1,8 +1,8 @@
 {
   "collectionName": "components_shared_image_gallery_blocks",
   "info": {
-    "displayName": "Image Gallery Block",
-    "description": "Multiple images inserted between text sections"
+    "displayName": "\u6b63\u6587\u56fe\u7247\u7ec4",
+    "description": "\u4e00\u6b21\u4e0a\u4f20\u591a\u5f20\u56fe\u7247\uff0c\u5e76\u663e\u793a\u5728\u5f53\u524d\u63d2\u5165\u4f4d\u7f6e"
   },
   "attributes": {
     "images": {
