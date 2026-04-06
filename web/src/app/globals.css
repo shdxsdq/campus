@@ -1451,6 +1451,12 @@ a {
   box-shadow: 0 14px 32px rgba(15, 38, 71, 0.12);
 }
 
+.article-inline-image-link {
+  display: block;
+  margin: 10px 0 4px;
+  text-decoration: none;
+}
+
 .article-body h1,
 .article-body h2,
 .article-body h3,

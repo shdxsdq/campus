@@ -1,8 +1,30 @@
 "use client";
 
 import { BlocksRenderer, type BlocksContent } from "@strapi/blocks-react-renderer";
+import type { ReactNode } from "react";
 
 import type { RichContentNode } from "@/lib/types";
+
+const imageUrlPattern = /\.(jpg|jpeg|png|webp|gif|bmp|svg)(\?.*)?$/i;
+
+const isImageUrl = (value: string) => imageUrlPattern.test(value);
+
+const flattenText = (value: ReactNode): string => {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((item) => flattenText(item)).join("");
+  }
+
+  if (value && typeof value === "object" && "props" in value) {
+    const props = (value as { props?: { children?: ReactNode } }).props;
+    return flattenText(props?.children ?? "");
+  }
+
+  return "";
+};
 
 export function RichContent({ content }: { content: RichContentNode[] }) {
   return (
@@ -38,11 +60,29 @@ export function RichContent({ content }: { content: RichContentNode[] }) {
             <code>{plainText}</code>
           </pre>
         ),
-        link: ({ children, url }) => (
-          <a href={url} target="_blank" rel="noreferrer">
-            {children}
-          </a>
-        ),
+        link: ({ children, url }) => {
+          if (isImageUrl(url)) {
+            const text = flattenText(children).trim();
+            const alt = text && text !== url ? text : "正文图片";
+
+            return (
+              <a
+                className="article-inline-image-link"
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <img className="article-body-image" src={url} alt={alt} />
+              </a>
+            );
+          }
+
+          return (
+            <a href={url} target="_blank" rel="noreferrer">
+              {children}
+            </a>
+          );
+        },
         image: ({ image }) => (
           <figure className="article-body-figure">
             <img
