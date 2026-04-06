@@ -8,6 +8,7 @@ import type {
   GalleryAlbum,
   GalleryPhoto,
   HeroSlide,
+  MediaAsset,
   RichContentNode,
   SiteContent,
   SiteSettings,
@@ -86,9 +87,43 @@ const extractTextFromRichNode = (node: unknown): string => {
   return "";
 };
 
+const isMediaLikeRecord = (value: Record<string, unknown>) =>
+  typeof value.url === "string" &&
+  (typeof value.mime === "string" ||
+    typeof value.hash === "string" ||
+    typeof value.alternativeText === "string" ||
+    typeof value.width === "number" ||
+    typeof value.height === "number" ||
+    "formats" in value);
+
+const normalizeRichContentValue = (value: unknown): unknown => {
+  if (Array.isArray(value)) {
+    return value.map((item) => normalizeRichContentValue(item));
+  }
+
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  const normalized = Object.fromEntries(
+    Object.entries(value).map(([key, nestedValue]) => [
+      key,
+      normalizeRichContentValue(nestedValue),
+    ]),
+  );
+
+  if (isMediaLikeRecord(normalized) && typeof normalized.url === "string") {
+    normalized.url = toAbsoluteAssetUrl(normalized.url) ?? normalized.url;
+  }
+
+  return normalized;
+};
+
 const toRichContent = (value: unknown): RichContentNode[] | undefined => {
   if (Array.isArray(value) && value.some(isRecord)) {
-    return value.filter(isRecord) as RichContentNode[];
+    return value
+      .filter(isRecord)
+      .map((node) => normalizeRichContentValue(node) as RichContentNode);
   }
 
   if (typeof value === "string") {
@@ -104,6 +139,7 @@ const toRichContent = (value: unknown): RichContentNode[] | undefined => {
 
 const toBodyContent = (value: unknown, summary: string) => {
   const richContent = toRichContent(value);
+  const fallbackParagraphs = summary.trim().length > 0 ? [summary.trim()] : [];
 
   if (richContent) {
     const paragraphs = richContent
@@ -111,7 +147,7 @@ const toBodyContent = (value: unknown, summary: string) => {
       .filter((paragraph) => paragraph.length > 0);
 
     return {
-      paragraphs: withFallbackArray(paragraphs, [summary]),
+      paragraphs: withFallbackArray(paragraphs, fallbackParagraphs),
       richContent,
     };
   }
@@ -119,8 +155,11 @@ const toBodyContent = (value: unknown, summary: string) => {
   if (Array.isArray(value)) {
     return {
       paragraphs: withFallbackArray(
-        value.filter((item): item is string => typeof item === "string"),
-        [summary],
+        value
+          .filter((item): item is string => typeof item === "string")
+          .map((item) => item.trim())
+          .filter((item) => item.length > 0),
+        fallbackParagraphs,
       ),
       richContent: undefined,
     };
@@ -133,24 +172,25 @@ const toBodyContent = (value: unknown, summary: string) => {
       .filter((paragraph) => paragraph.length > 0);
 
     return {
-      paragraphs: withFallbackArray(paragraphs, [summary]),
+      paragraphs: withFallbackArray(paragraphs, fallbackParagraphs),
       richContent: undefined,
     };
   }
 
   return {
-    paragraphs: [summary],
+    paragraphs: fallbackParagraphs,
     richContent: undefined,
   };
 };
 
-const toMediaAsset = (value: unknown): { url?: string; alt?: string } => {
+const toMediaAsset = (value: unknown): MediaAsset | null => {
   if (!value) {
-    return {};
+    return null;
   }
 
   if (typeof value === "string") {
-    return { url: toAbsoluteAssetUrl(value) };
+    const url = toAbsoluteAssetUrl(value);
+    return url ? { url } : null;
   }
 
   if (Array.isArray(value)) {
@@ -165,17 +205,40 @@ const toMediaAsset = (value: unknown): { url?: string; alt?: string } => {
 
   if (typeof item.url === "string") {
     return {
-      url: toAbsoluteAssetUrl(item.url),
+      url: toAbsoluteAssetUrl(item.url) ?? item.url,
       alt:
         typeof item.alternativeText === "string"
           ? item.alternativeText
           : typeof item.name === "string"
-            ? item.name
-            : undefined,
+          ? item.name
+          : undefined,
+      name: typeof item.name === "string" ? item.name : undefined,
+      mime: typeof item.mime === "string" ? item.mime : undefined,
+      size: typeof item.size === "number" ? item.size : undefined,
+      ext: typeof item.ext === "string" ? item.ext : undefined,
     };
   }
 
-  return {};
+  return null;
+};
+
+const toMediaAssets = (value: unknown): MediaAsset[] => {
+  if (!value) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => toMediaAsset(item))
+      .filter((item): item is MediaAsset => Boolean(item?.url));
+  }
+
+  if (isRecord(value) && "data" in value) {
+    return toMediaAssets(value.data);
+  }
+
+  const asset = toMediaAsset(value);
+  return asset?.url ? [asset] : [];
 };
 
 const withFallbackArray = <T>(items: T[] | undefined, fallback: T[]) =>
@@ -385,7 +448,9 @@ const mapPost = (value: unknown, type: "news" | "notice"): ContentPost | null =>
     return null;
   }
 
-  const bodyContent = toBodyContent(item.body, String(item.summary ?? ""));
+  const summary =
+    typeof item.summary === "string" ? item.summary.trim() : "";
+  const bodyContent = toBodyContent(item.body, summary);
   const mediaAsset = toMediaAsset(item.coverImage ?? item.coverImageUrl);
 
   return {
@@ -395,12 +460,13 @@ const mapPost = (value: unknown, type: "news" | "notice"): ContentPost | null =>
     title: String(item.title),
     publishedDate: String(item.publishedDate ?? item.publishedAt ?? ""),
     author: typeof item.author === "string" ? item.author : undefined,
-    summary: String(item.summary ?? ""),
+    summary: summary || undefined,
     body: bodyContent.paragraphs,
     bodyBlocks: bodyContent.richContent,
     highlights: toStringArray(item.highlights),
-    coverImageUrl: mediaAsset.url,
-    coverImageAlt: mediaAsset.alt,
+    coverImageUrl: mediaAsset?.url,
+    coverImageAlt: mediaAsset?.alt,
+    attachments: toMediaAssets(item.attachments),
   };
 };
 
@@ -503,6 +569,18 @@ export const getSiteContent = cache(async (): Promise<SiteContent> => {
     return DEMO_CONTENT;
   }
 
+  const postPopulateQuery =
+    "sort=publishedDate:desc" +
+    "&populate[coverImage][fields][0]=url" +
+    "&populate[coverImage][fields][1]=alternativeText" +
+    "&populate[coverImage][fields][2]=name" +
+    "&populate[attachments][fields][0]=url" +
+    "&populate[attachments][fields][1]=name" +
+    "&populate[attachments][fields][2]=alternativeText" +
+    "&populate[attachments][fields][3]=mime" +
+    "&populate[attachments][fields][4]=size" +
+    "&populate[attachments][fields][5]=ext";
+
   const [
     siteResponse,
     newsResponse,
@@ -514,10 +592,10 @@ export const getSiteContent = cache(async (): Promise<SiteContent> => {
   ] = await Promise.all([
     fetchStrapi<StrapiResponse<unknown>>("/api/site-setting"),
     fetchStrapi<StrapiResponse<unknown[]>>(
-      "/api/news-posts?sort=publishedDate:desc",
+      `/api/news-posts?${postPopulateQuery}`,
     ),
     fetchStrapi<StrapiResponse<unknown[]>>(
-      "/api/notice-posts?sort=publishedDate:desc&populate[coverImage][fields][0]=url&populate[coverImage][fields][1]=alternativeText&populate[coverImage][fields][2]=name",
+      `/api/notice-posts?${postPopulateQuery}`,
     ),
     fetchStrapi<StrapiResponse<unknown[]>>(
       "/api/teacher-subjects?sort=sortOrder:asc",

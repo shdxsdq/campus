@@ -62,6 +62,15 @@ export type RichContentNode = {
   [key: string]: unknown;
 };
 
+export type MediaAsset = {
+  url: string;
+  alt?: string;
+  name?: string;
+  mime?: string;
+  size?: number;
+  ext?: string;
+};
+
 export type ContentPost = {
   id: string;
   type: "news" | "notice";
@@ -69,12 +78,13 @@ export type ContentPost = {
   title: string;
   publishedDate: string;
   author?: string;
-  summary: string;
+  summary?: string;
   body: string[];
   bodyBlocks?: RichContentNode[];
-  highlights: string[];
+  highlights?: string[];
   coverImageUrl?: string;
   coverImageAlt?: string;
+  attachments?: MediaAsset[];
 };
 
 export type TeacherSubject = {

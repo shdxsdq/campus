@@ -1439,6 +1439,18 @@ a {
   white-space: pre-wrap;
 }
 
+.article-body-figure {
+  margin: 8px 0 2px;
+}
+
+.article-body-image {
+  display: block;
+  width: 100%;
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 14px 32px rgba(15, 38, 71, 0.12);
+}
+
 .article-body h1,
 .article-body h2,
 .article-body h3,
@@ -1475,6 +1487,14 @@ a {
   text-decoration-thickness: 1px;
 }
 
+.article-body figcaption {
+  margin-top: 10px;
+  color: #5b6980;
+  font-size: 14px;
+  line-height: 1.7;
+  text-align: center;
+}
+
 .article-body code {
   padding: 2px 6px;
   border-radius: 6px;
@@ -1496,6 +1516,54 @@ a {
   padding: 0;
   background: transparent;
   color: inherit;
+}
+
+.article-attachments {
+  margin-top: 34px;
+  padding-top: 26px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.article-attachments h2 {
+  margin-bottom: 16px;
+  color: #17304f;
+  font-size: 24px;
+}
+
+.article-attachment-list {
+  display: grid;
+  gap: 12px;
+}
+
+.article-attachment-link {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 14px 16px;
+  border: 1px solid #d7e0eb;
+  border-radius: 16px;
+  background: #f7fafc;
+  color: #23456f;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.article-attachment-link:hover {
+  transform: translateY(-1px);
+  border-color: #173f73;
+  box-shadow: 0 10px 24px rgba(15, 38, 71, 0.08);
+}
+
+.article-attachment-link strong {
+  color: #173f73;
+}
+
+.article-attachment-link span {
+  color: #607086;
+  font-size: 14px;
 }
 
 .article-actions {

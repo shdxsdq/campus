@@ -24,18 +24,60 @@
       "type": "date",
       "required": true
     },
+    "author": {
+      "type": "string",
+      "default": "校园新闻组"
+    },
     "summary": {
       "type": "text",
-      "required": true
+      "default": "",
+      "pluginOptions": {
+        "content-manager": {
+          "visible": false
+        },
+        "content-type-builder": {
+          "visible": false
+        }
+      }
     },
     "body": {
-      "type": "json"
+      "type": "blocks"
     },
     "highlights": {
-      "type": "json"
+      "type": "json",
+      "pluginOptions": {
+        "content-manager": {
+          "visible": false
+        },
+        "content-type-builder": {
+          "visible": false
+        }
+      }
     },
     "coverImageUrl": {
-      "type": "string"
+      "type": "string",
+      "pluginOptions": {
+        "content-manager": {
+          "visible": false
+        },
+        "content-type-builder": {
+          "visible": false
+        }
+      }
+    },
+    "coverImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": [
+        "images"
+      ]
+    },
+    "attachments": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "files"
+      ]
     }
   }
 }

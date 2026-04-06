@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { RichContent } from "@/components/rich-content";
-import type { ContentPost } from "@/lib/types";
+import type { ContentPost, MediaAsset } from "@/lib/types";
 
 const formatArticleTimestamp = (value: string) => {
   const date = new Date(value);
@@ -26,6 +26,40 @@ const formatArticleTimestamp = (value: string) => {
   }).format(date);
 };
 
+const formatAttachmentSize = (size?: number) => {
+  if (!size || size <= 0) {
+    return undefined;
+  }
+
+  if (size >= 1024 * 1024) {
+    return `${(size / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  if (size >= 1024) {
+    return `${(size / 1024).toFixed(1)} KB`;
+  }
+
+  return `${size.toFixed(0)} B`;
+};
+
+const formatAttachmentType = (attachment: MediaAsset) => {
+  if (attachment.ext) {
+    return attachment.ext.replace(".", "").toUpperCase();
+  }
+
+  if (attachment.mime) {
+    const [, subtype = ""] = attachment.mime.split("/");
+    return subtype.toUpperCase() || undefined;
+  }
+
+  return undefined;
+};
+
+const formatAttachmentMeta = (attachment: MediaAsset) =>
+  [formatAttachmentType(attachment), formatAttachmentSize(attachment.size)]
+    .filter((item): item is string => Boolean(item))
+    .join(" · ");
+
 export function ArticleDetail({
   post,
   categoryLabel,
@@ -37,6 +71,8 @@ export function ArticleDetail({
   categoryHref: string;
   publisherLabel: string;
 }) {
+  const attachments = post.attachments ?? [];
+
   return (
     <main className="article-page section">
       <div className="container">
@@ -72,7 +108,6 @@ export function ArticleDetail({
                 <strong>{publisherLabel}</strong>
               </span>
             </div>
-            {post.summary ? <p className="article-summary">{post.summary}</p> : null}
           </header>
 
           {post.coverImageUrl ? (
@@ -88,6 +123,31 @@ export function ArticleDetail({
               post.body.map((paragraph, index) => <p key={`${post.id}-${index}`}>{paragraph}</p>)
             )}
           </div>
+
+          {attachments.length > 0 ? (
+            <section className="article-attachments" aria-labelledby="article-attachments-title">
+              <h2 id="article-attachments-title">附件下载</h2>
+              <div className="article-attachment-list">
+                {attachments.map((attachment, index) => {
+                  const label = attachment.name ?? attachment.alt ?? `附件 ${index + 1}`;
+                  const meta = formatAttachmentMeta(attachment);
+
+                  return (
+                    <a
+                      key={`${attachment.url}-${index}`}
+                      className="article-attachment-link"
+                      href={attachment.url}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <strong>{label}</strong>
+                      {meta ? <span>{meta}</span> : null}
+                    </a>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
 
           <div className="article-actions">
             <Link href={categoryHref}>返回{categoryLabel}</Link>

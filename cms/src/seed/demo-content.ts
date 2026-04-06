@@ -1,8 +1,22 @@
-const createBody = (summary: string) => [
+const toBlocksBody = (paragraphs: string[]) =>
+  paragraphs
+    .filter((paragraph) => paragraph.trim().length > 0)
+    .map((paragraph) => ({
+      type: "paragraph",
+      children: [
+        {
+          type: "text",
+          text: paragraph,
+        },
+      ],
+    }));
+
+const createBody = (summary: string) =>
+  toBlocksBody([
   summary,
   "学校将围绕课堂质量、学生成长体验与家校协同持续推进相关工作，并把阶段性成果整理为前台可直接展示的内容。",
   "后续你可以直接在 Strapi 后台修改标题、摘要、正文、发布时间和封面图，前端页面会自动读取最新数据。",
-];
+  ]);
 
 const createPost = (
   title: string,

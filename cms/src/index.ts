@@ -30,29 +30,71 @@ const toBlocksBody = (paragraphs: string[]) =>
       ],
     }));
 
-const migrateLegacyNoticePosts = async (strapi: Core.Strapi) => {
-  const noticePosts = (await strapi.db
-    .query('api::notice-post.notice-post')
-    .findMany()) as Array<Record<string, unknown>>;
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
 
-  for (const noticePost of noticePosts) {
+const isBlocksBody = (value: unknown) =>
+  Array.isArray(value) &&
+  value.some((item) => isRecord(item) && typeof item.type === 'string');
+
+const extractParagraphs = (body: unknown, summary: string) => {
+  if (isBlocksBody(body)) {
+    return [];
+  }
+
+  if (Array.isArray(body)) {
+    return body
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  }
+
+  if (typeof body === 'string') {
+    try {
+      const parsed = JSON.parse(body) as unknown;
+      if (Array.isArray(parsed)) {
+        return extractParagraphs(parsed, summary);
+      }
+    } catch {
+      return body
+        .split(/\r?\n\r?\n|\r?\n/)
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0);
+    }
+  }
+
+  return summary.trim().length > 0 ? [summary.trim()] : [];
+};
+
+const migrateLegacyPosts = async (
+  strapi: Core.Strapi,
+  uid: string,
+  defaultAuthor: string,
+) => {
+  const posts = (await strapi.db.query(uid).findMany()) as Array<
+    Record<string, unknown>
+  >;
+
+  for (const post of posts) {
     const updates: Record<string, unknown> = {};
-    const body = noticePost.body;
-    const summary = String(noticePost.summary ?? '');
+    const body = post.body;
+    const summary = String(post.summary ?? '');
 
-    if (!noticePost.author) {
-      updates.author = '学校办公室';
+    if (!post.author) {
+      updates.author = defaultAuthor;
     }
 
-    if (Array.isArray(body) && body.every((item) => typeof item === 'string')) {
-      updates.body = toBlocksBody(body as string[]);
-    } else if (!body && summary) {
-      updates.body = toBlocksBody([summary]);
+    if (!isBlocksBody(body)) {
+      const paragraphs = extractParagraphs(body, summary);
+
+      if (paragraphs.length > 0) {
+        updates.body = toBlocksBody(paragraphs);
+      }
     }
 
     if (Object.keys(updates).length > 0) {
-      await strapi.db.query('api::notice-post.notice-post').update({
-        where: { id: noticePost.id },
+      await strapi.db.query(uid).update({
+        where: { id: post.id },
         data: updates,
       });
     }
@@ -83,7 +125,8 @@ export default {
       'api::notice-post.notice-post',
       demoSeed.noticePosts,
     );
-    await migrateLegacyNoticePosts(strapi);
+    await migrateLegacyPosts(strapi, 'api::news-post.news-post', '校园新闻组');
+    await migrateLegacyPosts(strapi, 'api::notice-post.notice-post', '学校办公室');
     await seedCollection(
       strapi,
       'api::teacher-subject.teacher-subject',

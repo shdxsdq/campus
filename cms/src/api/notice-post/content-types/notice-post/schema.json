@@ -30,7 +30,15 @@
     },
     "summary": {
       "type": "text",
-      "required": true
+      "default": "",
+      "pluginOptions": {
+        "content-manager": {
+          "visible": false
+        },
+        "content-type-builder": {
+          "visible": false
+        }
+      }
     },
     "body": {
       "type": "blocks"
@@ -62,6 +70,13 @@
       "multiple": false,
       "allowedTypes": [
         "images"
+      ]
+    },
+    "attachments": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": [
+        "files"
       ]
     }
   }
