@@ -612,14 +612,7 @@ export const getSiteContent = cache(async (): Promise<SiteContent> => {
     "&populate[attachments][fields][2]=alternativeText" +
     "&populate[attachments][fields][3]=mime" +
     "&populate[attachments][fields][4]=size" +
-    "&populate[attachments][fields][5]=ext" +
-    "&populate[contentSections][on][shared.rich-text-block][populate]=*" +
-    "&populate[contentSections][on][shared.image-gallery-block][populate][images][fields][0]=url" +
-    "&populate[contentSections][on][shared.image-gallery-block][populate][images][fields][1]=name" +
-    "&populate[contentSections][on][shared.image-gallery-block][populate][images][fields][2]=alternativeText" +
-    "&populate[contentSections][on][shared.image-gallery-block][populate][images][fields][3]=mime" +
-    "&populate[contentSections][on][shared.image-gallery-block][populate][images][fields][4]=size" +
-    "&populate[contentSections][on][shared.image-gallery-block][populate][images][fields][5]=ext";
+    "&populate[attachments][fields][5]=ext";
 
   const [
     siteResponse,

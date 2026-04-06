@@ -191,6 +191,12 @@ const syncArticleEditorLayout = async (
   }
 
   const current = await contentTypeService.findConfiguration(contentType);
+  const attributes = contentType.attributes ?? {};
+  const hasBody = Object.prototype.hasOwnProperty.call(attributes, 'body');
+  const hasBodyImages = Object.prototype.hasOwnProperty.call(
+    attributes,
+    'bodyImages',
+  );
 
   await contentTypeService.updateConfiguration(contentType, {
     settings: {
@@ -216,13 +222,15 @@ const syncArticleEditorLayout = async (
       author: withMetadata(current.metadatas.author, {
         label: '\u4f5c\u8005',
       }),
-      contentSections: withMetadata(current.metadatas.contentSections, {
+      body: withMetadata(current.metadatas.body, {
         label: '\u6b63\u6587\u5185\u5bb9',
         description:
-          '\u5728\u8fd9\u91cc\u6309\u987a\u5e8f\u6dfb\u52a0\u201c\u6b63\u6587\u6587\u5b57\u5757\u201d\u548c\u201c\u6b63\u6587\u56fe\u7247\u7ec4\u201d\uff0c\u56fe\u7247\u5c31\u4f1a\u663e\u793a\u5728\u5bf9\u5e94\u7684\u6587\u5b57\u4f4d\u7f6e',
+          '\u76f4\u63a5\u5728\u6b63\u6587\u91cc\u8f93\u5165\u6587\u5b57\uff0c\u5e76\u5728\u5149\u6807\u4f4d\u7f6e\u63d2\u5165\u56fe\u7247\uff0c\u5c31\u4f1a\u6309\u987a\u5e8f\u663e\u793a\u5728\u5bf9\u5e94\u6bb5\u843d\u4e2d',
+        visible: hasBody,
       }),
-      body: withMetadata(current.metadatas.body, {
-        label: '\u65e7\u7248\u6b63\u6587',
+      contentSections: withMetadata(current.metadatas.contentSections, {
+        label: '\u65b0\u7248\u5206\u6bb5\u5185\u5bb9',
+        description: '',
         visible: false,
       }),
       coverImageUrl: withMetadata(current.metadatas.coverImageUrl, {
@@ -239,6 +247,11 @@ const syncArticleEditorLayout = async (
         description:
           '\u9644\u4ef6\u4f1a\u7edf\u4e00\u663e\u793a\u5728\u6587\u7ae0\u6700\u4e0b\u65b9\uff0c\u652f\u6301\u4e00\u6b21\u4e0a\u4f20\u591a\u4e2a\u6587\u4ef6',
       }),
+      bodyImages: withMetadata(current.metadatas.bodyImages, {
+        label: '\u65e7\u7248\u6b63\u6587\u56fe\u5e93',
+        description: '',
+        visible: false,
+      }),
     },
     layouts: {
       ...current.layouts,
@@ -252,7 +265,7 @@ const syncArticleEditorLayout = async (
           { name: 'publishedDate', size: 4 },
           { name: 'author', size: 4 },
         ],
-        [{ name: 'contentSections', size: 12 }],
+        ...(hasBody ? [[{ name: 'body', size: 12 }]] : []),
         [
           { name: 'coverImage', size: 6 },
           { name: 'attachments', size: 6 },

@@ -4,6 +4,7 @@
   "private": true,
   "description": "A Strapi application",
   "scripts": {
+    "prebuild": "node scripts/clean-build-artifacts.js",
     "build": "strapi build",
     "console": "strapi console",
     "deploy": "strapi deploy",
