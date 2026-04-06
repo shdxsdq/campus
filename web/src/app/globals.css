@@ -1439,28 +1439,6 @@ a {
   white-space: pre-wrap;
 }
 
-.article-notes {
-  margin-top: 36px;
-  padding: 24px 26px;
-  border-radius: 22px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-}
-
-.article-notes h2 {
-  margin: 0 0 16px;
-  color: #17304f;
-  font-size: 20px;
-}
-
-.article-notes ul {
-  display: grid;
-  gap: 12px;
-  margin: 0;
-  padding-left: 20px;
-  color: #40526b;
-}
-
 .article-actions {
   display: flex;
   justify-content: center;

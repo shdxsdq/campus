@@ -80,17 +80,6 @@ export function ArticleDetail({
             ))}
           </div>
 
-          {post.highlights.length > 0 ? (
-            <section className="article-notes" aria-label="内容要点">
-              <h2>内容要点</h2>
-              <ul>
-                {post.highlights.map((highlight) => (
-                  <li key={highlight}>{highlight}</li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
           <div className="article-actions">
             <Link href={categoryHref}>返回{categoryLabel}</Link>
           </div>
